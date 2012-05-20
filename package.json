@@ -1,9 +1,9 @@
 {
-  "name": "sip",
-  "description": "Simple SIP implementation",
+  "name": "sip-websocket",
+  "description": "Simple SIP implementation with websocket as available transport.",
   "version": "0.0.2-13",
-  "homepage": "http://github.com/kirm/sip.js",
-  "author": "Kirill Mikhailov <kirill.mikhailov@gmail.com>",
+  "homepage": "http://github.com/bokuwakyuu/sip.js",
+  "author": "Kyuu CR <boku.wa.kyuu@gmail.com>",
   "main": "sip",
   "directories": {
     "lib": "",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kirm/sip.js.git"
+    "url": "https://github.com/bokuwakyuu/sip.js.git"
   },
   "engines": {
     "node": ">=0.2.2"

@@ -3,6 +3,7 @@ var net = require('net');
 var dns = require('dns');
 var assert = require('assert');
 var dgram = require('dgram');
+var websocket = require('websocket');
 
 var v05 = !(process.version < 'v0.5.0');
 
@@ -742,6 +743,93 @@ function makeUdpTransport_pre_V0_5(options, callback) {
 
 var makeUdpTransport = v05 ? makeUdpTransport_V0_5 : makeUdpTransport_pre_V0_5; 
 
+function makeWsTransport(webserver, options, callback) {
+  var connections = Object.create(null);
+
+  var WebSocketServer = websocket.server;
+  var server = new WebSocketServer({ httpServer: webserver });
+
+  server.on('request', function(request) {
+    var local = {protocol: 'WS', address: webserver.address().address, port: webserver.address().port};
+
+    function originIsAllowed(origin) {
+      // put logic here to detect whether the specified origin is allowed.
+      return true;
+    }
+
+    if (!originIsAllowed(request.origin)) {
+      // Make sure we only accept requests from an allowed origin
+      request.reject();
+      console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
+      return;
+    }
+    
+    var connection = request.accept('sip-websocket', request.origin);
+    
+    // Store a reference to the connection generated ID
+    connection.id = [request.socket.remoteAddress, request.socket.remotePort].join();
+    // connections[connection.id] = connection;
+    
+    // Now you can access the connection with connections[id] and find out
+    // the id for a connection with connection.id
+    console.log((new Date()) + ' Connection ID ' + connection.id + ' accepted.');
+    connection.on('close', function(reasonCode, description) {
+        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. ' +
+                    "Connection ID: " + connection.id);
+        
+        // Make sure to remove closed connections from the global pool
+        delete connections[connection.id];
+    });
+    connection.on('message', function(message) {
+      if (message.type === 'utf8') {
+        console.log((new Date()) + 'Received Message: ' + message.utf8Data);
+        // TODO parse the message json to the message
+        var messageObj = JSON.parse(message.utf8Data);
+        if (messageObj.command === 'sipMessage' && messageObj.data !== undefined) {
+          var m = parseMessage(messageObj.data);
+          callback(m, {protocol: 'WS', address: connection.socket.remoteAddress, port: connection.socket.remotePort});
+        } else
+        console.log((new Date()) + 'Message unformatted.');
+      }
+      else if (message.type === 'binary') {
+        console.log((new Date()) + 'Received Binary Message of ' + message.binaryData.length + ' bytes');
+        console.log((new Date()) + 'Sorry, cannot process binary data.');
+        // callback(message.binaryData, {protocol: 'WS', address: connection.socket.remoteAddress, port: connection.socket.remotePort});
+      }
+    });
+
+    function send(m) {
+      var message = { command: 'sipMessage' };
+      message['data'] = m;
+      connection.send(message);
+    }
+
+    connections[connection.id] = function(onError) {
+      if(onError) connection.on('error', onError);
+
+      return { 
+        send: send,
+        local: local,
+        release: function() {}
+      };
+    };
+  });
+  
+  return {
+    open: function(remote, error) {
+      var id = [remote.address, remote.port].join();
+
+      if(id in connections) return connections[id](error);
+
+      else {
+        console.log((new Date()) + 'Peer ' + remote.address + ':' + remote.port +
+          ' is not in connection list');
+      }
+    },
+    destroy: function() { server.shutDown(); }
+  }
+}
+
 function makeTransport(options, callback) {
   var protocols = {};
 
@@ -757,12 +845,14 @@ function makeTransport(options, callback) {
     protocols.UDP = makeUdpTransport(options, callbackAndLog); 
   if(options.tcp === undefined || options.tcp)
     protocols.TCP = makeTcpTransport(options, callbackAndLog);
+  if(options.websocket)
+    protocols.WS = makeWsTransport(options.websocket, options, callbackAndLog);
 
   function wrap(obj, target) {
     return Object.create(obj, {send: {value: function(m) {
       if(m.method) {
         m.headers.via[0].host = this.local.address;
-        m.headers.via[0].port = options.port || 5060;
+        m.headers.via[0].port = (this.local.protocol === 'WS') ? this.local.port : options.port || 5060;
         m.headers.via[0].protocol = this.local.protocol;
 
         try {
