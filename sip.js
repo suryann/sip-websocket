@@ -801,7 +801,7 @@ function makeWsTransport(webserver, options, callback) {
     function send(m) {
       var message = { command: 'sipMessage' };
       message['data'] = m;
-      connection.send(message);
+      connection.send(JSON.stringify(message));
     }
 
     connections[connection.id] = function(onError) {
