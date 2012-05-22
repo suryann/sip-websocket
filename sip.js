@@ -764,7 +764,7 @@ function makeWsTransport(webserver, options, callback) {
       return;
     }
     
-    var connection = request.accept('sip-websocket', request.origin);
+    var connection = request.accept('sip', request.origin);
     
     // Store a reference to the connection generated ID
     connection.id = [request.socket.remoteAddress, request.socket.remotePort].join();
@@ -782,14 +782,13 @@ function makeWsTransport(webserver, options, callback) {
     });
     connection.on('message', function(message) {
       if (message.type === 'utf8') {
-        console.log((new Date()) + 'Received Message: ' + message.utf8Data);
-        // TODO parse the message json to the message
-        var messageObj = JSON.parse(message.utf8Data);
-        if (messageObj.command === 'sipMessage' && messageObj.data !== undefined) {
-          var m = parseMessage(messageObj.data);
+        // console.log((new Date()) + 'Received Message: ' + message.utf8Data);
+        //var messageObj = JSON.parse(message.utf8Data);
+        //if (messageObj.command === 'sipMessage' && messageObj.data !== undefined) {
+          var m = parseMessage(message.utf8Data);
           callback(m, {protocol: 'WS', address: connection.socket.remoteAddress, port: connection.socket.remotePort});
-        } else
-        console.log((new Date()) + 'Message unformatted.');
+        //} else
+        //console.log((new Date()) + 'Message unformatted.');
       }
       else if (message.type === 'binary') {
         console.log((new Date()) + 'Received Binary Message of ' + message.binaryData.length + ' bytes');
@@ -799,9 +798,9 @@ function makeWsTransport(webserver, options, callback) {
     });
 
     function send(m) {
-      var message = { command: 'sipMessage' };
-      message['data'] = m;
-      connection.send(JSON.stringify(message));
+      //var message = { command: 'sipMessage' };
+      //message['data'] = m;
+      connection.send(m);
     }
 
     connections[connection.id] = function(onError) {
