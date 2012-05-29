@@ -760,7 +760,7 @@ function makeWsTransport(webserver, options, callback) {
     if (!originIsAllowed(request.origin)) {
       // Make sure we only accept requests from an allowed origin
       request.reject();
-      console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
+      util.debug((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
       return;
     }
     
@@ -768,11 +768,8 @@ function makeWsTransport(webserver, options, callback) {
     
     // Store a reference to the connection generated ID
     connection.id = [request.socket.remoteAddress, request.socket.remotePort].join();
-    // connections[connection.id] = connection;
-    
-    // Now you can access the connection with connections[id] and find out
-    // the id for a connection with connection.id
-    console.log((new Date()) + ' Connection ID ' + connection.id + ' accepted.');
+
+    util.debug((new Date()) + ' Connection ID ' + connection.id + ' accepted.');
     connection.on('close', function(reasonCode, description) {
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. ' +
                     "Connection ID: " + connection.id);
@@ -782,24 +779,16 @@ function makeWsTransport(webserver, options, callback) {
     });
     connection.on('message', function(message) {
       if (message.type === 'utf8') {
-        // console.log((new Date()) + 'Received Message: ' + message.utf8Data);
-        //var messageObj = JSON.parse(message.utf8Data);
-        //if (messageObj.command === 'sipMessage' && messageObj.data !== undefined) {
-          var m = parseMessage(message.utf8Data);
-          callback(m, {protocol: 'WS', address: connection.socket.remoteAddress, port: connection.socket.remotePort});
-        //} else
-        //console.log((new Date()) + 'Message unformatted.');
+        var m = parseMessage(message.utf8Data);
+        callback(m, {protocol: 'WS', address: connection.socket.remoteAddress, port: connection.socket.remotePort});
       }
       else if (message.type === 'binary') {
-        console.log((new Date()) + 'Received Binary Message of ' + message.binaryData.length + ' bytes');
-        console.log((new Date()) + 'Sorry, cannot process binary data.');
-        // callback(message.binaryData, {protocol: 'WS', address: connection.socket.remoteAddress, port: connection.socket.remotePort});
+        util.debug((new Date()) + 'Received Binary Message of ' + message.binaryData.length + ' bytes');
+        util.debug((new Date()) + 'Sorry, cannot process binary data.');
       }
     });
 
     function send(m) {
-      //var message = { command: 'sipMessage' };
-      //message['data'] = m;
       connection.send(m);
     }
 
@@ -889,11 +878,14 @@ function makeTransport(options, callback) {
 exports.makeTransport = makeTransport;
 
 function resolve(uri, action) {
+  if(uri.host.match(/^localhost$/))
+    uri.host = '127.0.0.1'
+
   if(uri.host.match(/^\d{1,3}(\.\d{1,3}){3}$/))
     return action([{protocol: uri.params.transport || 'UDP', address: uri.host, port: uri.port || 5060}]);
 
   if(uri.port) {
-    var protocols = uri.params.protocol ? [uri.params.protocol] : ['UDP', 'TCP'];
+    var protocols = uri.params.protocol ? [uri.params.protocol] : ['UDP', 'TCP', 'WS'];
     
     dns.resolve4(uri.host, function(err, address) {
       address = (address || []).map(function(x) { return protocols.map(function(p) { return { protocol: p, address: x, port: uri.port || 5060};});})
@@ -902,7 +894,7 @@ function resolve(uri, action) {
     });
   }
   else {
-    var protocols = uri.params.protocol ? [uri.params.protocol] : ['tcp', 'udp'];
+    var protocols = uri.params.protocol ? [uri.params.protocol] : ['tcp', 'udp', 'ws'];
   
     var n = protocols.length;
     var addresses = [];
