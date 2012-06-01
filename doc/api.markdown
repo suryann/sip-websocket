@@ -1,12 +1,12 @@
-SIP.js API
+SIP-WebSocket API
 ==========
 
-sip.js is a simple SIP protocol implementation.
+sip-websocket is a simple SIP protocol implementation with WebSocket transport enabled.
 
 It features:
 
 * SIP Message Parser
-* UDP and TCP based transport
+* UDP, TCP and WebSocket based transport
 * Transactions
 * Digest Authentication
 
@@ -15,7 +15,7 @@ Example
 
 Redirecting all SIP requests to backup.somewhere.net
 
-    var sip = require('sip');
+    var sip = require('sip-websocket');
   
     sip.start({}, function(request) {
       var response = sip.makeResponse(request, 302, 'Moved Temporarily');
@@ -156,7 +156,7 @@ fields of root object and `headers.via` array. If deep is true it performs full 
 
 ## Digest Authentication
 
-sip.js implements digest authentication as described in RFC 2617. Module can be accessed by calling `require('sip/digest');`
+sip.js implements digest authentication as described in RFC 2617. Module can be accessed by calling `require('sip-websocket/digest');`
 
 ### Server-side API
 
@@ -228,11 +228,11 @@ calculates hash of 'user:realm:password'
 
 ## Proxy Module
 
-sip.js includes proxy module to simplify proxy server development. It can be accessed via `require('sip/proxy');`
+sip.js includes proxy module to simplify proxy server development. It can be accessed via `require('sip-websocket/proxy');`
 Usage example:
 
-    var sip = require('sip');
-    var proxy = require('sip/proxy');
+    var sip = require('sip-websocket');
+    var proxy = require('sip-websocket/proxy');
     var db = require('userdb');
 
     proxy.start({}, function(rq) {
@@ -270,6 +270,4 @@ If you are sending a request and omit `callback` parameter, default calback will
       // sending response to original incoming request
       proxy.send(rs);
     } 
-
-
 

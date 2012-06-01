@@ -1,12 +1,10 @@
 # README
 
-This is a simple SIP implementation with WebSocket as available transport.
-This project is a fork from [sip.js](https://github.com/kirm/sip.js)
+This is a simple SIP implementation with WebSocket as available transport. This project is a fork from [sip.js](https://github.com/kirm/sip.js)
 
 ## Installation
 
-1. Clone this project.
-> `git clone git://github.com/bokuwakyuu/sip-websocket.git`
+1. Clone this project. `git clone git://github.com/bokuwakyuu/sip-websocket.git`
 2. Install dependencies. `npm install`
 
 ## Usage
