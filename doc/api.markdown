@@ -106,6 +106,7 @@ Starts SIP protocol.
 * `address` - interface address to be listen on. By default sip.js listens on all interfaces.
 * `udp` - enables UDP transport. Enabled by default.
 * `tcp` - enables TCP transport. Enabled by default.
+* `websocket` - enable WebSocket transport, must input http server here. Disabled by default.
 
 `onRequest` - callback to be called on new request arrival. It is expected to be a function of two arguments
 `function (request, remote) {}`. First argument `request` is a received request. Second argument `remote` is an object containing

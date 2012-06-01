@@ -753,28 +753,25 @@ function makeWsTransport(webserver, options, callback) {
     var local = {protocol: 'WS', address: webserver.address().address, port: webserver.address().port};
 
     function originIsAllowed(origin) {
-      // put logic here to detect whether the specified origin is allowed.
+      // TODO: put logic here to detect whether the specified origin is allowed.
       return true;
     }
 
     if (!originIsAllowed(request.origin)) {
-      // Make sure we only accept requests from an allowed origin
+      // Accept requests from an allowed origin
       request.reject();
       util.debug((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
       return;
     }
     
     var connection = request.accept('sip', request.origin);
-    
-    // Store a reference to the connection generated ID
     connection.id = [request.socket.remoteAddress, request.socket.remotePort].join();
 
     util.debug((new Date()) + ' Connection ID ' + connection.id + ' accepted.');
     connection.on('close', function(reasonCode, description) {
-        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. ' +
+        util.debug((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. ' +
                     "Connection ID: " + connection.id);
-        
-        // Make sure to remove closed connections from the global pool
+        // Remove closed connections from the global pool
         delete connections[connection.id];
     });
     connection.on('message', function(message) {
@@ -810,7 +807,8 @@ function makeWsTransport(webserver, options, callback) {
       if(id in connections) return connections[id](error);
 
       else {
-        console.log((new Date()) + 'Peer ' + remote.address + ':' + remote.port +
+        // TODO: implement this
+        util.debug((new Date()) + 'Peer ' + remote.address + ':' + remote.port +
           ' is not in connection list');
       }
     },
@@ -1299,6 +1297,9 @@ exports.create = function(options, callback) {
         }
       }
       else {
+        //A workaround to send the last ACK on INVITE
+        if(m.method === 'ACK')
+          callback(m, remote);
         t.message && t.message(m, remote);
       }
     } 
@@ -1349,10 +1350,12 @@ exports.create = function(options, callback) {
   } 
 }
 
-exports.start = function(options, callback) {
+exports.start = function(options, callback, onReady) {
   var r = exports.create(options, callback);
 
   exports.send = r.send;
   exports.stop = r.destroy;
+
+  onReady(options);
 }
 
